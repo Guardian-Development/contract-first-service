@@ -1,0 +1,7 @@
+version: '3.7'
+
+services:
+  user-service:
+    image: ${SERVICE_GROUP}/${SERVICE_NAME}:${SERVICE_TAG}
+    ports:
+      - 4000:4000

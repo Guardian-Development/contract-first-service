@@ -1,0 +1,17 @@
+.dockerignore
+.idea
+.git
+.gitignore
+.vs
+.vscode
+.gradle
+.env
+Dockerfile
+gradlew.bat
+README.md
+build
+out
+HELP.md
+docker-compose-override.yml
+docker-compose.yml
+.env

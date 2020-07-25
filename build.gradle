@@ -1,0 +1,170 @@
+import java.text.SimpleDateFormat
+
+plugins {
+	id 'org.springframework.boot' version "$springFrameworkVersion"
+	id 'io.spring.dependency-management' version "$springDependencyManagementVersion"
+	id 'org.openapi.generator' version "$openApiGeneratorVersion"
+	id 'jacoco'
+	id 'java'
+	id 'maven-publish'
+}
+
+group = "$serviceGroupId"
+version = "$serviceVersion"
+sourceCompatibility = '14'
+
+java {
+	withSourcesJar()
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation "org.springframework.boot:spring-boot-starter-web"
+	implementation "org.springframework.boot:spring-boot-starter-actuator"
+	implementation "io.swagger.parser.v3:swagger-parser:$swaggerParserVersion"
+	implementation "org.openapitools:jackson-databind-nullable:$jacksonDataBindVersion"
+
+	testImplementation "org.springframework.boot:spring-boot-starter-test"
+}
+
+// adds build info to build/resources/main/META-INF for actuator endpoint
+springBoot {
+	buildInfo()
+}
+
+// generates the spring controller interfaces from openapi spec in src/main/resources/service.yaml
+openApiGenerate {
+	generatorName = "spring"
+	inputSpec = "$projectDir/src/main/resources/service.yaml"
+	outputDir = "$buildDir/generated"
+	apiPackage = "org.guardiandev.helloservice.api"
+	invokerPackage = "org.guardiandev.helloservice"
+	modelPackage = "org.guardiandev.helloservice.models"
+	configOptions = [
+		dateLibrary: "java8",
+		interfaceOnly: "true",
+	]
+}
+
+// forces generation of spring controllers on compile, adding them to the sources for compilation
+compileJava.dependsOn tasks.openApiGenerate
+sourceSets.main.java.srcDir "$buildDir/generated/src/main/java"
+sourceSets.main.resources.srcDir "$buildDir/generated/src/main/resources"
+
+// adds an integration test source set
+sourceSets {
+	integrationTest {
+		java.srcDir "$projectDir/src/integrationTest/java"
+		resources.srcDir "$projectDir/src/integrationTest/resources"
+		compileClasspath += main.output + test.output
+		runtimeClasspath += main.output + test.output
+	}
+}
+
+// makes integration test source set extend the test sources
+// downloadDependenciesConfig just provides a target to pull in dependencies only, useful when doing docker caching
+configurations {
+	downloadDependenciesConfig.extendsFrom implementation, testImplementation
+	integrationTestImplementation.extendsFrom testImplementation
+	integrationTestRuntime.extendsFrom testRuntime
+}
+
+task downloadDependencies (type: Exec) {
+	configurations.downloadDependenciesConfig.files
+	commandLine 'echo', 'Downloaded all dependencies'
+}
+
+task integrationTest(type: Test) {
+	description = 'Runs integration tests'
+	group = 'verification'
+	testClassesDirs = sourceSets.integrationTest.output.classesDirs
+	classpath = sourceSets.integrationTest.runtimeClasspath
+}
+
+task buildDockerimage(type: Exec) {
+	workingDir "$projectDir"
+	commandLine 'docker', 'build', '.', '-t', "$serviceGroupId/$serviceApplicationName:$serviceVersion"
+}
+
+task composeUp(type: Exec) {
+	dependsOn buildDockerimage
+	workingDir "$projectDir"
+	environment << [ SERVICE_TAG: "$serviceVersion", SERVICE_GROUP: "$serviceGroupId", SERVICE_NAME: "$serviceApplicationName" ]
+	commandLine 'docker-compose', '-p', 'custom_network', 'up', '-d'
+}
+
+task waitForService {
+	doLast {
+		def responseCode = null
+
+		while(responseCode != 200) {
+			sleep 1000
+			try {
+				def req = "$serviceConnectionString".toURL().openConnection()
+				responseCode = req.getResponseCode()
+				logger.log(LogLevel.INFO, "Response returned from service $responseCode")
+			}
+			catch(Exception) {
+				logger.log(LogLevel.INFO, "Failed to connect to service")
+			}
+		}
+	}
+}
+
+task saveDockerLogsToFile(type: Exec) {
+	commandLine 'docker-compose', '-p', 'custom_network', 'logs', '--no-color'
+	doFirst {
+		def date = new Date()
+		def sdf = new SimpleDateFormat("MM-dd-yyyy-HH:mm:ss")
+		def uniqueId = sdf.format(date)
+		standardOutput new FileOutputStream("$buildDir/compose-$uniqueId-logs.txt")
+	}
+}
+
+task composeDown(type: Exec) {
+	workingDir "$projectDir"
+	commandLine 'docker-compose', '-p', 'custom_network', 'down', '-v'
+}
+
+def testLogging = {
+	afterTest { desc, result ->
+		logger.quiet "Test ${desc.name} [${desc.className}] with result: ${result.resultType}"
+	}
+}
+
+test {
+	configure testLogging
+}
+
+integrationTest {
+	configure testLogging
+	dependsOn test, composeUp, waitForService
+	finalizedBy saveDockerLogsToFile, composeDown
+}
+
+jacoco {
+	toolVersion = "0.8.5"
+}
+
+jacocoTestReport {
+	reports {
+		html.enabled = true
+	}
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: ['bjss/example/api/**', 'bjss/example/models/**'])
+		}))
+	}
+}
+
+publishing {
+	publications {
+		bootJava(MavenPublication) {
+			from components.java
+			artifact bootJar
+		}
+	}
+}

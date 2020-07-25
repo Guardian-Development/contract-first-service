@@ -1,0 +1,26 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Hello World!
+paths:
+  /hello:
+    get:
+      summary: Gets Hello World
+      operationId: hello
+      tags:
+        - hello
+      responses:
+        '200':
+          description: Hello World
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Hello"
+components:
+  schemas:
+    Hello:
+      required:
+        - text
+      properties:
+        text:
+          type: string
