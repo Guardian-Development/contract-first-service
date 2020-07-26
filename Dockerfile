@@ -24,11 +24,14 @@ FROM jre-build AS build
 WORKDIR /app
 
 # copy gradle only files over
+COPY gradlew gradlew
+COPY gradle/ gradle/
+RUN ./gradlew --version
+
+# copy project build files over
 COPY build.gradle build.gradle
 COPY settings.gradle settings.gradle
 COPY gradle.properties gradle.properties
-COPY gradlew gradlew
-COPY gradle/ gradle/
 
 # download dependencies only
 RUN ./gradlew downloadDependencies

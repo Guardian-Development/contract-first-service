@@ -1,4 +1,4 @@
-package org.guardiandev.helloservice.application;
+package org.guardiandev.helloservice.service;
 
 import org.guardiandev.helloservice.models.Hello;
 import org.junit.Test;

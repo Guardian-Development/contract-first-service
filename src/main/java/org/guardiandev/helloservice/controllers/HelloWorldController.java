@@ -1,7 +1,7 @@
-package org.guardiandev.helloservice.rest;
+package org.guardiandev.helloservice.controllers;
 
 import org.guardiandev.helloservice.api.HelloApi;
-import org.guardiandev.helloservice.application.HelloService;
+import org.guardiandev.helloservice.service.HelloService;
 import org.guardiandev.helloservice.models.Hello;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

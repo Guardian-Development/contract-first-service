@@ -72,11 +72,13 @@ configurations {
 	integrationTestRuntime.extendsFrom testRuntime
 }
 
+// pull dependencies needed by the application
 task downloadDependencies (type: Exec) {
 	configurations.downloadDependenciesConfig.files
 	commandLine 'echo', 'Downloaded all dependencies'
 }
 
+// run the integrationTest/** tests
 task integrationTest(type: Test) {
 	description = 'Runs integration tests'
 	group = 'verification'
@@ -96,6 +98,7 @@ task composeUp(type: Exec) {
 	commandLine 'docker-compose', '-p', 'custom_network', 'up', '-d'
 }
 
+// task that simply waits for the service health endpoint to return 200
 task waitForService {
 	doLast {
 		def responseCode = null
@@ -129,6 +132,7 @@ task composeDown(type: Exec) {
 	commandLine 'docker-compose', '-p', 'custom_network', 'down', '-v'
 }
 
+// print tests out to console as they run
 def testLogging = {
 	afterTest { desc, result ->
 		logger.quiet "Test ${desc.name} [${desc.className}] with result: ${result.resultType}"
@@ -139,14 +143,17 @@ test {
 	configure testLogging
 }
 
+// setup integrationTests to rely on using docker compose to turn the service on, execute tests, then save logs to file
+// and turn the service off
 integrationTest {
 	configure testLogging
 	dependsOn test, composeUp, waitForService
 	finalizedBy saveDockerLogsToFile, composeDown
 }
 
+// adding jacoco test reporting
 jacoco {
-	toolVersion = "0.8.5"
+	toolVersion = "$jacocoToolVersion"
 }
 
 jacocoTestReport {
@@ -160,6 +167,7 @@ jacocoTestReport {
 	}
 }
 
+// adding components and bootJar to the published artifacts
 publishing {
 	publications {
 		bootJava(MavenPublication) {
