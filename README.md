@@ -36,7 +36,7 @@ building and running the application with docker
 running the integration tests (this handles building and running the application in docker beforehand)
 
 ```bash
-./gradlew integrationTest
+./gradlew integrationTestDocker
 ```
 
 publishing the application standalone (with sources JAR)

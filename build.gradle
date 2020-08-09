@@ -27,7 +27,8 @@ dependencies {
 	implementation "io.swagger.parser.v3:swagger-parser:$swaggerParserVersion"
 	implementation "org.openapitools:jackson-databind-nullable:$jacksonDataBindVersion"
 
-	testImplementation "org.springframework.boot:spring-boot-starter-test"
+	testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+	testRuntime "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
 }
 
 // adds build info to build/resources/main/META-INF for actuator endpoint
@@ -84,6 +85,7 @@ task integrationTest(type: Test) {
 	group = 'verification'
 	testClassesDirs = sourceSets.integrationTest.output.classesDirs
 	classpath = sourceSets.integrationTest.runtimeClasspath
+	outputs.upToDateWhen { false }
 }
 
 task buildDockerimage(type: Exec) {
@@ -143,11 +145,18 @@ test {
 	configure testLogging
 }
 
-// setup integrationTests to rely on using docker compose to turn the service on, execute tests, then save logs to file
-// and turn the service off
 integrationTest {
 	configure testLogging
-	dependsOn test, composeUp, waitForService
+}
+
+// runs integration tests using docker compose to turn the service on, execute tests, then save logs to file
+// and turn the service off
+task integrationTestDocker {
+	dependsOn integrationTestClasses, composeUp, waitForService
+	waitForService.mustRunAfter(composeUp)
+	doLast {
+		integrationTest.executeTests()
+	}
 	finalizedBy saveDockerLogsToFile, composeDown
 }
 

@@ -1,9 +1,9 @@
 package org.guardiandev.helloservice.service;
 
 import org.guardiandev.helloservice.models.Hello;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HelloServiceTest {
 
@@ -18,6 +18,6 @@ public class HelloServiceTest {
         Hello result = unitUnderTest.getHello();
 
         // Assert
-        assertThat(result).isEqualToComparingFieldByField(expectedResult);
+        assertEquals(result, expectedResult);
     }
 }
