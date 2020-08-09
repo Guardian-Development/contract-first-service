@@ -22,8 +22,10 @@ repositories {
 }
 
 dependencies {
-	implementation "org.springframework.boot:spring-boot-starter-web"
+	implementation "org.springframework.boot:spring-boot-starter-webflux"
 	implementation "org.springframework.boot:spring-boot-starter-actuator"
+	implementation "org.springframework.boot:spring-boot-starter-validation"
+
 	implementation "io.swagger.parser.v3:swagger-parser:$swaggerParserVersion"
 	implementation "org.openapitools:jackson-databind-nullable:$jacksonDataBindVersion"
 
@@ -47,6 +49,7 @@ openApiGenerate {
 	configOptions = [
 		dateLibrary: "java8",
 		interfaceOnly: "true",
+		reactive: "true",
 	]
 }
 
@@ -68,7 +71,7 @@ sourceSets {
 // makes integration test source set extend the test sources
 // downloadDependenciesConfig just provides a target to pull in dependencies only, useful when doing docker caching
 configurations {
-	downloadDependenciesConfig.extendsFrom implementation, testImplementation
+	downloadDependenciesConfig.extendsFrom implementation, testImplementation, testRuntime
 	integrationTestImplementation.extendsFrom testImplementation
 	integrationTestRuntime.extendsFrom testRuntime
 }

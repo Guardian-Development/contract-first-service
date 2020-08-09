@@ -6,9 +6,11 @@ import org.guardiandev.helloservice.models.Hello;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 @RestController
-public final class HelloWorldController implements HelloApi {
+public class HelloWorldController implements HelloApi {
 
     private final HelloService helloService;
 
@@ -17,7 +19,7 @@ public final class HelloWorldController implements HelloApi {
     }
 
     @Override
-    public ResponseEntity<Hello> hello() {
-        return new ResponseEntity<>(helloService.getHello(), HttpStatus.OK);
+    public Mono<ResponseEntity<Hello>> hello(ServerWebExchange exchange) {
+        return Mono.just(new ResponseEntity<>(helloService.getHello(), HttpStatus.OK));
     }
 }
