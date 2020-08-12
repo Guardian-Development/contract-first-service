@@ -103,6 +103,11 @@ task composeUp(type: Exec) {
 	commandLine 'docker-compose', 'up', '-d'
 }
 
+task composeDependenciesUp(type: Exec) {
+	workingDir "$projectDir"
+	commandLine 'docker-compose', '-f', 'docker-compose.yml', 'up', '-d'
+}
+
 // task that simply waits for the service health endpoint to return 200
 task waitForService {
 	doLast {

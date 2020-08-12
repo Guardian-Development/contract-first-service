@@ -1,5 +1,6 @@
 package org.guardiandev.helloservice;
 
+import org.guardiandev.helloservice.config.TestPropertiesContainer;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -12,12 +13,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HelloWorldIntegrationTest {
 
+    private final TestPropertiesContainer properties = new TestPropertiesContainer();
+
     @Test
     public void shouldReturnHelloWorld() {
         // Arrange
 
         // Act
-        var result = makeGetRequest("http://localhost:4000/hello");
+        var result = makeGetRequest(properties.getValue("hello.endpoint"));
 
         // Assert
         assertTrue(result.contains("Hello World!"));

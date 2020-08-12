@@ -29,7 +29,13 @@ running the application standalone
 building and running the application with docker
 
 ```bash
+# only dependencies (not the service itself)
+./gradlew composeDependenciesUp 
+
+# full dependencies and service
 ./gradlew composeUp
+
+# turn anything thats on, off
 ./gradlew composeDown
 ```
 
