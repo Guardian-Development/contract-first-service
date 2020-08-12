@@ -5,3 +5,5 @@ services:
     image: ${SERVICE_GROUP}/${SERVICE_NAME}:${SERVICE_TAG}
     ports:
       - 4000:4000
+    environment:
+      - SPRING_PROFILE=${SPRING_PROFILE}

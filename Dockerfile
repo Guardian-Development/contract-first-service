@@ -46,5 +46,7 @@ FROM alpine:latest
 COPY --from=jre-build /app/jre /jre
 COPY --from=build /app/build/libs/helloservice-0.0.1.jar /app.jar
 
+ENV SPRING_PROFILE=default
+
 EXPOSE 4000
-ENTRYPOINT ["/jre/bin/java", "-jar", "app.jar"]
+ENTRYPOINT /jre/bin/java -Dspring.profiles.active=$SPRING_PROFILE -jar app.jar

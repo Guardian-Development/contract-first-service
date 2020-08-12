@@ -99,7 +99,7 @@ task buildDockerimage(type: Exec) {
 task composeUp(type: Exec) {
 	dependsOn buildDockerimage
 	workingDir "$projectDir"
-	environment << [ SERVICE_TAG: "$serviceVersion", SERVICE_GROUP: "$serviceGroupId", SERVICE_NAME: "$serviceApplicationName" ]
+	environment << [ SERVICE_TAG: "$serviceVersion", SERVICE_GROUP: "$serviceGroupId", SERVICE_NAME: "$serviceApplicationName", SPRING_PROFILE: "docker" ]
 	commandLine 'docker-compose', 'up', '-d'
 }
 

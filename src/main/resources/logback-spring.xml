@@ -1,0 +1,23 @@
+<configuration>
+
+    <springProfile name="default">
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} [%thread][%highlight(%-5level)][%yellow(%logger{36})] - %msg%n</pattern>
+            </encoder>
+        </appender>
+        <logger name="org.neo4j.springframework.data" level="DEBUG"/>
+    </springProfile>
+
+    <springProfile name="docker">
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} [%thread][%-5level][%logger{36}] - %msg%n</pattern>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
