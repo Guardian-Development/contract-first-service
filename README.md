@@ -10,7 +10,7 @@ https://medium.com/@JoeHonour/java-developing-a-spring-service-using-an-openapi-
 
 extensions on-top of the guide:
 - docker support has been added, allowing the building and testing of the application in docker.
-- integrationTests are added (in addition to unit tests) which allow testing of the application at the HTTP layer.
+- componentTests are added (in addition to unit tests) which allow testing of the application at the HTTP layer.
 
 ## Using the project
 
@@ -39,10 +39,10 @@ building and running the application with docker
 ./gradlew composeDown
 ```
 
-running the integration tests (this handles building and running the application in docker beforehand)
+running the component tests (this handles building and running the application in docker beforehand)
 
 ```bash
-./gradlew integrationTestDocker
+./gradlew componentTestDocker
 ```
 
 publishing the application standalone (with sources JAR)

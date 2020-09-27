@@ -58,22 +58,22 @@ compileJava.dependsOn tasks.openApiGenerate
 sourceSets.main.java.srcDir "$buildDir/generated/src/main/java"
 sourceSets.main.resources.srcDir "$buildDir/generated/src/main/resources"
 
-// adds an integration test source set
+// adds an component test source set
 sourceSets {
-	integrationTest {
-		java.srcDir "$projectDir/src/integrationTest/java"
-		resources.srcDir "$projectDir/src/integrationTest/resources"
+	componentTest {
+		java.srcDir "$projectDir/src/componentTest/java"
+		resources.srcDir "$projectDir/src/componentTest/resources"
 		compileClasspath += main.output + test.output
 		runtimeClasspath += main.output + test.output
 	}
 }
 
-// makes integration test source set extend the test sources
+// makes component test source set extend the test sources
 // downloadDependenciesConfig just provides a target to pull in dependencies only, useful when doing docker caching
 configurations {
 	downloadDependenciesConfig.extendsFrom implementation, testImplementation, testRuntime
-	integrationTestImplementation.extendsFrom testImplementation
-	integrationTestRuntime.extendsFrom testRuntime
+	componentTestImplementation.extendsFrom testImplementation
+	componentTestRuntime.extendsFrom testRuntime
 }
 
 // pull dependencies needed by the application
@@ -83,11 +83,11 @@ task downloadDependencies (type: Exec) {
 }
 
 // run the integrationTest/** tests
-task integrationTest(type: Test) {
-	description = 'Runs integration tests'
+task componentTest(type: Test) {
+	description = 'Runs component tests'
 	group = 'verification'
-	testClassesDirs = sourceSets.integrationTest.output.classesDirs
-	classpath = sourceSets.integrationTest.runtimeClasspath
+	testClassesDirs = sourceSets.componentTest.output.classesDirs
+	classpath = sourceSets.componentTest.runtimeClasspath
 	outputs.upToDateWhen { false }
 }
 
@@ -153,17 +153,17 @@ test {
 	configure testLogging
 }
 
-integrationTest {
+componentTest {
 	configure testLogging
 }
 
-// runs integration tests using docker compose to turn the service on, execute tests, then save logs to file
+// runs component tests using docker compose to turn the service on, execute tests, then save logs to file
 // and turn the service off
-task integrationTestDocker {
-	dependsOn integrationTestClasses, composeUp, waitForService
+task componentTestDocker {
+	dependsOn componentTestClasses, composeUp, waitForService
 	waitForService.mustRunAfter(composeUp)
 	doLast {
-		integrationTest.executeTests()
+		componentTest.executeTests()
 	}
 	finalizedBy saveDockerLogsToFile, composeDown
 }
