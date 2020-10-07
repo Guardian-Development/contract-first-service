@@ -12,6 +12,6 @@ README.md
 build
 out
 HELP.md
-docker-compose-override.yml
+docker-compose-*.yml
 docker-compose.yml
 .env

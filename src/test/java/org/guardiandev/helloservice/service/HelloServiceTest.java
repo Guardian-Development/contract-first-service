@@ -10,7 +10,7 @@ public class HelloServiceTest {
     private final HelloService unitUnderTest = new HelloService();
 
     @Test
-    public void shouldReturnHelloWorld() {
+    public void shouldReturnHelloWorldText() {
         // Arrange
         Hello expectedResult = new Hello().text("Hello World!");
 

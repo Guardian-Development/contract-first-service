@@ -1,0 +1,14 @@
+version: '3.7'
+
+services:
+  contract-first-service:
+    image: ${SERVICE_GROUP}/${SERVICE_NAME}:${SERVICE_TAG}
+    ports:
+      - 4000:4000
+    volumes:
+      - type: bind
+        source: ./build/jacoco
+        target: /jacoco
+    environment:
+      - JAVA_TOOL_OPTIONS=-javaagent:/jacoco/org.jacoco.agent-runtime.jar=destfile=/jacoco/componentTest.exec
+      - SPRING_PROFILE=${SPRING_PROFILE}

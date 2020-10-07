@@ -21,16 +21,42 @@ repositories {
 	mavenCentral()
 }
 
+sourceSets {
+	// adds an component test source set
+	componentTest {
+		java.srcDir "$projectDir/src/componentTest/java"
+		resources.srcDir "$projectDir/src/componentTest/resources"
+		compileClasspath += main.output + test.output
+		runtimeClasspath += main.output + test.output
+	}
+}
+
+// makes component test source set extend the test sources
+// downloadDependenciesConfig just provides a target to pull in dependencies only, useful when doing docker caching
+// downloadJacoco can be used to pull the jacoco runtime jar needed for code coverage in component tests
+configurations {
+	downloadDependenciesConfig.extendsFrom implementation, testImplementation, testRuntime
+	componentTestImplementation.extendsFrom testImplementation
+	componentTestRuntime.extendsFrom testRuntime
+	downloadJacoco
+}
+
 dependencies {
+	// spring dependencies
 	implementation "org.springframework.boot:spring-boot-starter-webflux"
 	implementation "org.springframework.boot:spring-boot-starter-actuator"
 	implementation "org.springframework.boot:spring-boot-starter-validation"
 
+	// open-api dependencies
 	implementation "io.swagger.parser.v3:swagger-parser:$swaggerParserVersion"
 	implementation "org.openapitools:jackson-databind-nullable:$jacksonDataBindVersion"
 
+	// test dependencies
 	testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
 	testRuntime "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+
+	// code coverage dependencies
+	downloadJacoco "org.jacoco:org.jacoco.agent:$jacocoToolVersion:runtime"
 }
 
 // adds build info to build/resources/main/META-INF for actuator endpoint
@@ -58,31 +84,13 @@ compileJava.dependsOn tasks.openApiGenerate
 sourceSets.main.java.srcDir "$buildDir/generated/src/main/java"
 sourceSets.main.resources.srcDir "$buildDir/generated/src/main/resources"
 
-// adds an component test source set
-sourceSets {
-	componentTest {
-		java.srcDir "$projectDir/src/componentTest/java"
-		resources.srcDir "$projectDir/src/componentTest/resources"
-		compileClasspath += main.output + test.output
-		runtimeClasspath += main.output + test.output
-	}
-}
-
-// makes component test source set extend the test sources
-// downloadDependenciesConfig just provides a target to pull in dependencies only, useful when doing docker caching
-configurations {
-	downloadDependenciesConfig.extendsFrom implementation, testImplementation, testRuntime
-	componentTestImplementation.extendsFrom testImplementation
-	componentTestRuntime.extendsFrom testRuntime
-}
-
 // pull dependencies needed by the application
 task downloadDependencies (type: Exec) {
 	configurations.downloadDependenciesConfig.files
 	commandLine 'echo', 'Downloaded all dependencies'
 }
 
-// run the integrationTest/** tests
+// run the componentTest/** tests
 task componentTest(type: Test) {
 	description = 'Runs component tests'
 	group = 'verification'
@@ -91,11 +99,13 @@ task componentTest(type: Test) {
 	outputs.upToDateWhen { false }
 }
 
+// builds the docker image, tagging it with the same group id, name, and version as the JAR
 task buildDockerimage(type: Exec) {
 	workingDir "$projectDir"
 	commandLine 'docker', 'build', '.', '-t', "$serviceGroupId/$serviceApplicationName:$serviceVersion"
 }
 
+// turns on the docker compose environment including the service and dependencies
 task composeUp(type: Exec) {
 	dependsOn buildDockerimage
 	workingDir "$projectDir"
@@ -103,6 +113,27 @@ task composeUp(type: Exec) {
 	commandLine 'docker-compose', 'up', '-d'
 }
 
+// copies the jacoco agent to the build dir, stripping out any version numbers
+// this means we can reliable mount the agent from within a docker container
+task copyJacocoAgent(type: Copy) {
+	from configurations.downloadJacoco
+	into "$buildDir/jacoco"
+
+	// strip version number out of agent jar
+	configurations.downloadJacoco.allDependencies.each {
+		rename "-${it.version}", ""
+	}
+}
+
+// docker compose up the jacoco override environment, which mounts the jacoco agent and connects it to the app JVM
+task composeUpJacoco(type: Exec) {
+	dependsOn buildDockerimage, copyJacocoAgent
+	workingDir "$projectDir"
+	environment << [ SERVICE_TAG: "$serviceVersion", SERVICE_GROUP: "$serviceGroupId", SERVICE_NAME: "$serviceApplicationName", SPRING_PROFILE: "docker" ]
+	commandLine 'docker-compose', '-f', 'docker-compose.jacoco.override.yml', 'up', '-d'
+}
+
+// turns on only the services registered in the docker-compose file (not override files)
 task composeDependenciesUp(type: Exec) {
 	workingDir "$projectDir"
 	commandLine 'docker-compose', '-f', 'docker-compose.yml', 'up', '-d'
@@ -127,6 +158,7 @@ task waitForService {
 	}
 }
 
+// saves all docker compose logs to a file in the build directory named after the date and time
 task saveDockerLogsToFile(type: Exec) {
 	commandLine 'docker-compose', 'logs', '--no-color'
 	doFirst {
@@ -137,9 +169,10 @@ task saveDockerLogsToFile(type: Exec) {
 	}
 }
 
+// turns off all docker compose resources
 task composeDown(type: Exec) {
 	workingDir "$projectDir"
-	commandLine 'docker-compose', 'down', '-v'
+	commandLine 'docker-compose', 'down', '-t', '60', '-v'
 }
 
 // print tests out to console as they run
@@ -151,17 +184,27 @@ def testLogging = {
 
 test {
 	configure testLogging
+	useJUnitPlatform()
 }
 
 componentTest {
 	configure testLogging
+	useJUnitPlatform()
 }
 
 // runs component tests using docker compose to turn the service on, execute tests, then save logs to file
 // and turn the service off
 task componentTestDocker {
 	dependsOn componentTestClasses, composeUp, waitForService
-	waitForService.mustRunAfter(composeUp)
+	doLast {
+		componentTest.executeTests()
+	}
+	finalizedBy saveDockerLogsToFile, composeDown
+}
+
+// runs component tests using docker compose and the jacoco agent to record test coverage
+task componentTestCoverageDocker {
+	dependsOn componentTestClasses, composeUpJacoco, waitForService
 	doLast {
 		componentTest.executeTests()
 	}
@@ -173,13 +216,24 @@ jacoco {
 	toolVersion = "$jacocoToolVersion"
 }
 
-jacocoTestReport {
+// creates a code coverage report including both unit and component tests
+// excludes generates api controllers/models from openapi state
+task fullCoverageReport(type: JacocoReport) {
+	// run tests
+	dependsOn test, componentTestCoverageDocker
+	// include test exec coverage files
+	executionData tasks.withType(Test)
+	// create coverage for main source set files
+	sourceSets sourceSets.main
+	// generate reports to jacoco-reports
 	reports {
 		html.enabled = true
+		html.destination file("$buildDir/jacoco-reports")
 	}
+	// do not include generated files in source set for coverage
 	afterEvaluate {
 		classDirectories.setFrom(files(classDirectories.files.collect {
-			fileTree(dir: it, exclude: ['bjss/example/api/**', 'bjss/example/models/**'])
+			fileTree(dir: it, exclude: ['org/guardiandev/helloservice/api/**', 'org/guardiandev/helloservice/models/**'])
 		}))
 	}
 }

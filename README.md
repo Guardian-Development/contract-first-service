@@ -14,6 +14,8 @@ extensions on-top of the guide:
 
 ## Using the project
 
+You will need to build the application to resolve any compilation issues, as the build step triggers code generation of classes used by the Api.
+
 building the application 
 
 ```bash
@@ -43,6 +45,12 @@ running the component tests (this handles building and running the application i
 
 ```bash
 ./gradlew componentTestDocker
+```
+
+running the unit and component tests, producing a code coverage report with Jacoco (location build/jacoco-reports/index.html): 
+
+```bash
+./gradlew fullCoverageReport
 ```
 
 publishing the application standalone (with sources JAR)

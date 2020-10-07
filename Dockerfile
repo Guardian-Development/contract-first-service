@@ -47,6 +47,7 @@ COPY --from=jre-build /app/jre /jre
 COPY --from=build /app/build/libs/helloservice-0.0.1.jar /app.jar
 
 ENV SPRING_PROFILE=default
+ENV JAVA_TOOL_OPTIONS=
 
 EXPOSE 4000
 ENTRYPOINT /jre/bin/java -Dspring.profiles.active=$SPRING_PROFILE -jar app.jar
