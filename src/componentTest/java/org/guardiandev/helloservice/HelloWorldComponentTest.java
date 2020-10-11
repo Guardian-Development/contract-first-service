@@ -11,7 +11,7 @@ import java.net.http.HttpResponse;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HelloWorldIntegrationTest {
+public class HelloWorldComponentTest {
 
     private final TestPropertiesContainer properties = new TestPropertiesContainer();
 

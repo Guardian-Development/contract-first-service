@@ -130,7 +130,7 @@ task composeUpJacoco(type: Exec) {
 	dependsOn buildDockerimage, copyJacocoAgent
 	workingDir "$projectDir"
 	environment << [ SERVICE_TAG: "$serviceVersion", SERVICE_GROUP: "$serviceGroupId", SERVICE_NAME: "$serviceApplicationName", SPRING_PROFILE: "docker" ]
-	commandLine 'docker-compose', '-f', 'docker-compose.jacoco.override.yml', 'up', '-d'
+	commandLine 'docker-compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.jacoco.override.yml', 'up', '-d'
 }
 
 // turns on only the services registered in the docker-compose file (not override files)
