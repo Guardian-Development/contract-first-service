@@ -8,9 +8,9 @@ Please follow this article to understand what this project offers:
 
 https://medium.com/@JoeHonour/java-developing-a-spring-service-using-an-openapi-contract-first-approach-37dfd6422a9c
 
-extensions on-top of the guide:
-- docker support has been added, allowing the building and testing of the application in docker.
-- componentTests are added (in addition to unit tests) which allow testing of the application at the HTTP layer.
+Please follow this article for understanding how the component tests and code coverage are implemented:
+
+https://medium.com/@JoeHonour/java-how-to-run-component-tests-with-code-coverage-using-gradle-and-docker-47fc023969a4 
 
 ## Using the project
 
